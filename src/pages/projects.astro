@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+import { projects } from '../data/projects.js';
+---
+<Base title="Projects · Zaahid Tinwala" description="Python projects by Zaahid Tinwala: HDB resale fair value, portfolio performance analytics and a portfolio risk engine." active="proj">
+  <header class="page-head wrap">
+    <p class="kicker">PROJ &lt;GO&gt;</p>
+    <h1>Projects</h1>
+  </header>
+
+  <section class="wrap">
+    <div class="projects">
+      {projects.map((p) => (
+        <a class="proj" href={p.link} target="_blank" rel="noopener">
+          <div class="proj-top mono"><span>{p.year}</span><span class="amber">GitHub ↗</span></div>
+          <h2 class="display">{p.name}</h2>
+          <p>{p.blurb}</p>
+          <p class="tags">{p.stack.join(' · ')}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .projects { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .proj { display: flex; flex-direction: column; gap: 0.7rem; padding: 1.25rem; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
+  .proj { transition: border-color 0.25s ease, transform 0.25s ease, background 0.25s ease; }
+  .proj:hover { border-color: var(--amber); text-decoration: none; transform: translateY(-4px); background: color-mix(in srgb, var(--amber) 5%, var(--panel)); }
+  .proj-top { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); }
+  .proj h2 { font-weight: 700; font-size: 1.5rem; line-height: 1.05; margin: 0; }
+  .proj p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+  .proj .tags { margin-top: auto; padding-top: 0.5rem; }
+  @media (max-width: 860px) { .projects { grid-template-columns: minmax(0, 1fr); } }
+</style>

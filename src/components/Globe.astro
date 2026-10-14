@@ -1,0 +1,132 @@
+---
+// A dotted globe facing Singapore, with a pulsing red dot on it.
+//
+// How it works:
+//  - src/data/globe-points.json is a ready-made list of points that sit on land (about 2,700),
+//    sampled every 2 degrees from a world map. It was worked out once, so pages load instantly.
+//  - In the browser, a small script draws those points on a canvas as a rotating sphere.
+//    No graphics card or extra library is needed, so it works on every device.
+import points from '../data/globe-points.json';
+---
+<figure class="globe" aria-label="Globe showing Zaahid is based in Singapore">
+  <div class="globe-stage">
+    <canvas class="globe-canvas" data-points={JSON.stringify(points)}></canvas>
+  </div>
+  <figcaption class="globe-label mono">
+    <span class="pin" aria-hidden="true"></span>
+    Based in Singapore · 1.35° N, 103.82° E
+  </figcaption>
+</figure>
+
+<script is:inline>
+  (function () {
+    const canvas = document.querySelector('.globe-canvas');
+    if (!canvas || !canvas.getContext) return;
+    const ctx = canvas.getContext('2d');
+    const pts = JSON.parse(canvas.dataset.points); // flat list: lat, lng, lat, lng, ...
+    const rad = Math.PI / 180;
+    const SG = { lat: 1.35, lng: 103.82 };
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Read the site's colours so the globe matches the theme.
+    const css = getComputedStyle(document.documentElement);
+    const col = (name, fallback) => (css.getPropertyValue(name).trim() || fallback);
+    const DOT = col('--muted', '#8c96a8');
+    const RED = col('--down', '#ff6b6b');
+    const RIM = col('--line', '#212a37');
+    const FILL = col('--panel', '#11161e');
+
+    let size = 0, dpr = 1;
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      size = canvas.clientWidth;
+      canvas.width = size * dpr;
+      canvas.height = size * dpr;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Drag to spin; it eases back towards Singapore when you let go.
+    let dragX = null, dragOffset = 0;
+    canvas.addEventListener('pointerdown', (e) => { dragX = e.clientX - dragOffset; canvas.setPointerCapture(e.pointerId); canvas.style.cursor = 'grabbing'; });
+    canvas.addEventListener('pointermove', (e) => { if (dragX !== null) dragOffset = e.clientX - dragX; });
+    const end = () => { dragX = null; canvas.style.cursor = 'grab'; };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+
+    // Orthographic projection: where a lat/lng lands on the visible face of the globe.
+    function project(lat, lng, lat0, lng0) {
+      const p = lat * rad, l = (lng - lng0) * rad, p0 = lat0 * rad;
+      const cosp = Math.cos(p);
+      const x = cosp * Math.sin(l);
+      const y = Math.cos(p0) * Math.sin(p) - Math.sin(p0) * cosp * Math.cos(l);
+      const z = Math.sin(p0) * Math.sin(p) + Math.cos(p0) * cosp * Math.cos(l);
+      return [x, y, z];
+    }
+
+    let t0 = performance.now();
+    function frame(now) {
+      const t = reduce ? 0 : (now - t0) / 1000;
+      if (dragX === null) dragOffset *= 0.92;
+      const lng0 = SG.lng + Math.sin(t * 0.25) * 25 - dragOffset * 0.4;
+      const lat0 = 12; // tilt slightly so the northern hemisphere shows a little more
+      const r = (size / 2) * 0.86;
+      const cx = size / 2, cy = size / 2;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, size, size);
+
+      // Sphere body and rim.
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = FILL;
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = RIM;
+      ctx.stroke();
+
+      // Land dots: brighter towards the centre, fading at the edges.
+      ctx.fillStyle = DOT;
+      const d = Math.max(1, size / 260);
+      for (let i = 0; i < pts.length; i += 2) {
+        const [x, y, z] = project(pts[i], pts[i + 1], lat0, lng0);
+        if (z <= 0) continue;
+        ctx.globalAlpha = 0.25 + 0.75 * z;
+        ctx.fillRect(cx + x * r - d / 2, cy - y * r - d / 2, d, d);
+      }
+      ctx.globalAlpha = 1;
+
+      // Singapore: solid red dot with an expanding pulse ring.
+      const [sx, sy, sz] = project(SG.lat, SG.lng, lat0, lng0);
+      if (sz > 0) {
+        const px = cx + sx * r, py = cy - sy * r;
+        const phase = reduce ? 0.35 : (t % 1.6) / 1.6;
+        ctx.beginPath();
+        ctx.arc(px, py, 4 + phase * 18, 0, Math.PI * 2);
+        ctx.strokeStyle = RED;
+        ctx.globalAlpha = 1 - phase;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = RED;
+        ctx.fill();
+      }
+
+      if (!reduce || dragX !== null || Math.abs(dragOffset) > 0.5) requestAnimationFrame(frame);
+      else setTimeout(() => requestAnimationFrame(frame), 250);
+    }
+    requestAnimationFrame(frame);
+  })();
+</script>
+
+<style>
+  .globe { margin: 0; display: grid; justify-items: center; gap: 0.75rem; }
+  .globe-stage { width: min(100%, 21rem); aspect-ratio: 1; }
+  .globe-canvas { width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
+  .globe-label { display: flex; align-items: center; gap: 0.55rem; font-size: 0.75rem; color: var(--muted); letter-spacing: 0.03em; }
+  .pin { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--down); animation: ping 1.8s ease-out infinite; }
+  @keyframes ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--down) 60%, transparent); } 70%, 100% { box-shadow: 0 0 0 0.5rem transparent; } }
+  @media (prefers-reduced-motion: reduce) { .pin { animation: none; } }
+</style>

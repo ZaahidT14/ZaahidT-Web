@@ -1,0 +1,165 @@
+---
+// Home page: who you are, what you're doing now, and a way into every section.
+import Base from '../layouts/Base.astro';
+import { profile } from '../data/profile.js';
+import { experience } from '../data/experience.js';
+import Skills from '../components/Skills.astro';
+import Globe from '../components/Globe.astro';
+import { competitions } from '../data/competitions.js';
+import { clubs } from '../data/clubs.js';
+import { projects } from '../data/projects.js';
+import { allDecks } from '../data/decks.js';
+import Decks from '../components/Decks.astro';
+
+const notes = Object.values(import.meta.glob('./notes/*.md', { eager: true }))
+  .map((n) => ({ ...n.frontmatter, slug: n.file.split('/').pop().replace('.md', '') }))
+  .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+// "Now": every role or club that is still running.
+const now = [
+  ...experience.filter((e) => e.dates.includes('Present')).map((e) => ({ what: e.role, where: e.org, href: 'experience.html' })),
+  ...clubs.filter((c) => c.dates.includes('Present') && c.role.includes('Chair')).map((c) => ({ what: c.role.split('·').pop().trim(), where: c.name, href: `clubs/${c.slug}.html` })),
+];
+
+const glance = [
+  ['Base', 'Singapore · SGT (UTC+8)'],
+  ['Study', 'B.ACF (Hons), NTU · 2025–29'],
+  ['Languages', 'English · Hindi · Gujarati'],
+];
+
+const sections = [
+  { code: 'EXP', name: 'Experience', href: 'experience.html', count: experience.length, unit: 'roles', items: experience.slice(0, 3).map((e) => e.org) },
+  { code: 'COMP', name: 'Competitions', href: 'competitions.html', count: competitions.length, unit: 'competitions', items: competitions.slice(0, 3).map((c) => `${c.short}: ${c.result.split('·')[0].trim()}`) },
+  { code: 'CLUB', name: 'Clubs', href: 'clubs.html', count: clubs.length, unit: 'clubs', items: clubs.slice(0, 3).map((c) => c.name) },
+  { code: 'PROJ', name: 'Projects', href: 'projects.html', count: projects.length, unit: 'projects', items: projects.map((p) => p.name) },
+];
+---
+<Base
+  title="Zaahid Tinwala"
+  description="Zaahid Tinwala: NTU Applied Computing in Finance undergraduate working across markets, risk and code. FX options, VaR, Bloomberg models and lead-lag research."
+>
+  <section class="hero wrap">
+    <div>
+      <p class="eyebrow mono">{profile.eyebrow}</p>
+      <h1 class="display">Zaahid<br />Tinwala</h1>
+      <p class="lede">{profile.lede}</p>
+      <p class="status"><span class="dot" aria-hidden="true"></span>{profile.status}</p>
+      <div class="cta">
+        <a class="btn primary" href="experience.html">See experience</a>
+        <a class="btn" href="resume.pdf" target="_blank" rel="noopener">Resume (PDF)</a>
+        <a class="btn" href={profile.linkedin} target="_blank" rel="noopener">LinkedIn</a>
+      </div>
+    </div>
+
+    <div class="hero-side">
+      <Globe />
+      <aside class="des" aria-label="Profile at a glance">
+        <div class="des-head mono"><span>ZAAHID TINWALA</span><span class="amber">DES</span></div>
+        <dl>
+          {glance.map(([k, v]) => (
+            <div class="row"><dt class="mono">{k}</dt><dd>{v}</dd></div>
+          ))}
+        </dl>
+      </aside>
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2 class="sec"><span class="code">NOW &lt;GO&gt;</span>What I'm doing now</h2>
+    <ul class="now">
+      {now.map((n) => (
+        <li><a href={n.href}><span class="now-what">{n.what}</span><span class="muted">{n.where}</span></a></li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="block wrap">
+    <h2 class="sec"><span class="code">SKILL &lt;GO&gt;</span>Toolkit</h2>
+    <Skills />
+  </section>
+
+  {allDecks.length > 0 && (
+    <section class="block wrap">
+      <h2 class="sec"><span class="code">DECK &lt;GO&gt;</span>Slides</h2>
+      <Decks decks={allDecks} showSource />
+    </section>
+  )}
+
+  <section class="block wrap">
+    <h2 class="sec"><span class="code">MENU &lt;GO&gt;</span>Everything on this site</h2>
+    <div class="index">
+      {sections.map((s) => (
+        <a class="tile" href={s.href}>
+          <div class="tile-top"><span class="code">{s.code}</span><span class="mono muted">{s.count} {s.unit}</span></div>
+          <h3 class="display">{s.name}</h3>
+          <ul>{s.items.map((i) => <li>{i}</li>)}</ul>
+          <span class="tile-go mono">Open →</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  {notes.length > 0 && (
+    <section class="block wrap">
+      <h2 class="sec"><span class="code">NOTE &lt;GO&gt;</span>Latest note</h2>
+      <a class="latest" href={`notes/${notes[0].slug}.html`}>
+        <span class="mono muted">{notes[0].tag}</span>
+        <span class="latest-title display">{notes[0].title}</span>
+        <span class="muted">{notes[0].summary}</span>
+      </a>
+    </section>
+  )}
+</Base>
+
+<style>
+  .hero {
+    display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 4rem); align-items: end; padding-block: clamp(3rem, 8vw, 6rem) 1rem;
+  }
+  .eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber); margin: 0 0 1rem; }
+  h1 { font-weight: 700; font-size: clamp(3.4rem, 12vw, 8rem); line-height: 0.88; margin: 0 0 1.5rem; }
+  .lede { font-size: 1.12rem; max-width: 36rem; margin: 0 0 1.25rem; }
+  .status { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; color: var(--muted); margin: 0 0 1.75rem; }
+  .dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--up); box-shadow: 0 0 0 4px color-mix(in srgb, var(--up) 20%, transparent); }
+  .cta { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+  .hero-side { display: grid; gap: 1.5rem; }
+  .des { border: 1px solid var(--line); background: var(--panel); font-size: 0.88rem; }
+  .des-head { display: flex; justify-content: space-between; padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--line); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--muted); }
+  .des dl { margin: 0; }
+  .des .row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 0.75rem; padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--line); }
+  .des .row:last-child { border-bottom: 0; }
+  .des dt { color: var(--amber); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding-top: 0.15rem; }
+  .des dd { margin: 0; }
+
+  .now { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .now a { display: grid; gap: 0.2rem; padding: 1rem 1.1rem; background: var(--bg); color: var(--fg); height: 100%; }
+  .now a:hover { text-decoration: none; background: var(--panel); }
+  .now-what { font-weight: 600; }
+
+  .index { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+  .tile { display: flex; flex-direction: column; gap: 0.6rem; padding: 1.1rem; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
+  .tile { transition: border-color 0.25s ease, transform 0.25s ease; }
+  .tile:hover { border-color: var(--amber); text-decoration: none; transform: translateY(-4px); }
+  .tile-go { transition: transform 0.25s ease; }
+  .tile:hover .tile-go { transform: translateX(5px); }
+  .tile-top { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
+  .tile h3 { font-weight: 700; font-size: 1.6rem; margin: 0; line-height: 1; }
+  .tile ul { list-style: none; margin: 0; padding: 0; color: var(--muted); font-size: 0.85rem; display: grid; gap: 0.2rem; }
+  .tile-go { margin-top: auto; color: var(--amber); font-size: 0.78rem; }
+
+  .latest { display: grid; gap: 0.35rem; padding: 1.25rem; border: 1px solid var(--line); color: var(--fg); max-width: 48rem; }
+  .latest:hover { border-color: var(--amber); text-decoration: none; }
+  .latest-title { font-weight: 700; font-size: 1.6rem; line-height: 1.05; }
+
+  @media (max-width: 960px) {
+    .index { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .hero { grid-template-columns: minmax(0, 1fr); align-items: start; }
+    .now { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .index { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

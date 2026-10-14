@@ -1,0 +1,59 @@
+---
+// Skills as a grid of icon tiles, grouped (Markets / Tools / Code).
+// Icons come from the Tabler icon set (the @tabler/icons package) and are written straight
+// into the page when the site is built, so nothing extra loads in the visitor's browser.
+import fs from 'node:fs';
+import path from 'node:path';
+import { skills, languages } from '../data/experience.js';
+
+const { showLanguages = false } = Astro.props;
+
+const iconDir = path.join(process.cwd(), 'node_modules/@tabler/icons/icons/outline');
+const icon = (name) => {
+  try {
+    return fs
+      .readFileSync(path.join(iconDir, `${name}.svg`), 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\s(width|height|class)="[^"]*"/g, '')
+      .replace('<svg', '<svg aria-hidden="true" focusable="false"');
+  } catch {
+    return '';
+  }
+};
+---
+<div class="skills">
+  {skills.map((g) => (
+    <div class="group">
+      <p class="group-label mono">{g.group}</p>
+      <ul class="tiles">
+        {g.items.map((s) => (
+          <li class="tile">
+            <span class="ic" set:html={icon(s.icon)} />
+            <span class="name">{s.name}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+  {showLanguages && <p class="langs mono"><span class="amber">Languages</span> {languages.join(' · ')}</p>}
+</div>
+
+<style>
+  .skills { display: grid; gap: 1.75rem; }
+  .group-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 0.75rem; }
+  .tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.75rem; }
+  .tile {
+    display: grid; justify-items: center; align-content: center; gap: 0.7rem; text-align: center;
+    aspect-ratio: 1 / 0.82; padding: 0.75rem; border: 1px solid var(--line); background: var(--panel);
+    transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  }
+  .tile:hover { border-color: var(--amber); transform: translateY(-3px); background: color-mix(in srgb, var(--amber) 6%, var(--panel)); }
+  .ic { width: 1.75rem; height: 1.75rem; color: var(--fg); transition: color 0.2s ease; }
+  .ic :global(svg) { width: 100%; height: 100%; stroke-width: 1.6; }
+  .tile:hover .ic { color: var(--amber); }
+  .name { font-size: 0.85rem; font-weight: 600; line-height: 1.25; }
+  .langs { font-size: 0.8rem; color: var(--muted); margin: 0; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  @media (max-width: 960px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 420px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (prefers-reduced-motion: reduce) { .tile { transition: none; } .tile:hover { transform: none; } }
+</style>

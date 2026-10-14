@@ -1,0 +1,21 @@
+{
+  "name": "zaahid-site",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tabler/icons": "^3.19.0",
+    "astro": "^7.3.8"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  }
+}

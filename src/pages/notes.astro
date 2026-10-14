@@ -1,0 +1,46 @@
+---
+// Notes list. Every .md file in this folder shows up here automatically, newest first.
+import Base from '../layouts/Base.astro';
+
+const notes = Object.values(import.meta.glob('./notes/*.md', { eager: true }))
+  .map((n) => ({ ...n.frontmatter, slug: n.file.split('/').pop().replace('.md', '') }))
+  .sort((a, b) => new Date(b.date) - new Date(a.date));
+const fmt = (d) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+---
+<Base title="Notes · Zaahid Tinwala" description="Market notes and case write-ups by Zaahid Tinwala." active="note">
+  <header class="page-head wrap">
+    <p class="kicker">NOTE &lt;GO&gt;</p>
+    <h1>Market notes</h1>
+  </header>
+
+  <section class="wrap">
+    <ul class="notes">
+      {notes.map((n) => (
+        <li>
+          <a href={`notes/${n.slug}.html`}>
+            <span class="n-date mono">{fmt(n.date)}</span>
+            <span class="n-title display">{n.title}</span>
+            <span class="n-sum">{n.summary}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .notes { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .notes a { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 0.3rem 2rem; padding: 1.4rem 0; border-bottom: 1px solid var(--line); color: var(--fg); }
+  .notes a { position: relative; transition: padding 0.25s ease, background 0.25s ease; }
+  .notes a::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--amber); transform: scaleY(0); transform-origin: top; transition: transform 0.3s ease; }
+  .notes a:hover { text-decoration: none; background: var(--panel); padding-left: 1.1rem; }
+  .notes a:hover::before { transform: scaleY(1); }
+  .notes a:hover .n-title { color: var(--amber); }
+  .n-date { color: var(--muted); font-size: 0.8rem; grid-row: span 2; padding-top: 0.3rem; }
+  .n-title { font-weight: 700; font-size: 1.6rem; line-height: 1.05; }
+  .n-sum { color: var(--muted); max-width: 44rem; }
+  @media (max-width: 700px) {
+    .notes a { grid-template-columns: minmax(0, 1fr); }
+    .n-date { grid-row: auto; }
+  }
+</style>

@@ -1,0 +1,76 @@
+---
+// One page per competition. getStaticPaths tells Astro to build a page for every entry
+// in src/data/competitions.js, using its slug as the file name.
+import Base from '../../layouts/Base.astro';
+import Decks from '../../components/Decks.astro';
+import { competitions } from '../../data/competitions.js';
+
+export function getStaticPaths() {
+  return competitions.map((c, i) => ({ params: { slug: c.slug }, props: { c, i } }));
+}
+const { c, i } = Astro.props;
+const prev = competitions[i - 1];
+const next = competitions[i + 1];
+---
+<Base title={`${c.name} · Zaahid Tinwala`} description={`${c.name}: ${c.result}. ${c.summary}`} root="../" active="comp">
+  <header class="page-head wrap">
+    <a class="back mono" href="../competitions.html">← COMP &lt;GO&gt; All competitions</a>
+    <h1>{c.name}</h1>
+    <p class="intro">{c.host}</p>
+  </header>
+
+  <section class="wrap">
+    <dl class="facts">
+      <div><dt class="mono">Result</dt><dd class={c.award ? 'result' : 'mono muted'}>{c.result}</dd></div>
+      {c.date && <div><dt class="mono">When</dt><dd>{c.date}</dd></div>}
+      {c.role && <div><dt class="mono">My role</dt><dd>{c.role}</dd></div>}
+    </dl>
+
+    <Decks decks={c.decks} root="../" />
+    <Decks decks={c.files ?? []} root="../" action="Download ↓" download id="files" />
+
+    <div class="body">
+      <p class="summary">{c.summary}</p>
+      {c.points.length > 0 && (
+        <>
+          <h2 class="sub mono">What I did</h2>
+          <ul class="points">{c.points.map((p) => <li>{p}</li>)}</ul>
+        </>
+      )}
+      {c.links.length > 0 && (
+        <div class="links">
+          {c.links.map((l) => (
+            <a class="btn" href={l.internal ? `../${l.href}` : l.href} target={l.internal ? undefined : '_blank'} rel={l.internal ? undefined : 'noopener'}>
+              {l.label} {l.internal ? '→' : '↗'}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+
+  <nav class="wrap pager" aria-label="More competitions">
+    {prev ? <a href={`${prev.slug}.html`}><span class="mono muted">← Previous</span><span>{prev.name}</span></a> : <span></span>}
+    {next ? <a class="r" href={`${next.slug}.html`}><span class="mono muted">Next →</span><span>{next.name}</span></a> : <span></span>}
+  </nav>
+</Base>
+
+<style>
+  .back { font-size: 0.78rem; display: inline-block; margin-bottom: 1.5rem; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1px; margin: 0 0 2rem; background: var(--line); border: 1px solid var(--line); }
+  .facts div { background: var(--panel); padding: 0.9rem 1.1rem; }
+  .facts dt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--amber); margin-bottom: 0.25rem; }
+  .facts dd { margin: 0; }
+  .facts .result { font-size: 1rem; }
+  .body { max-width: 46rem; }
+  .summary { font-size: 1.1rem; margin: 0 0 1.5rem; }
+  .sub { font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 0.75rem; }
+  .links { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.75rem; }
+  .pager { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 4rem; }
+  .pager a { display: grid; gap: 0.2rem; padding: 1rem; border: 1px solid var(--line); color: var(--fg); }
+  .pager a:hover { border-color: var(--amber); text-decoration: none; }
+  .pager .r { text-align: right; }
+  @media (max-width: 700px) {
+    .pager { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

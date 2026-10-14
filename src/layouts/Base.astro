@@ -1,0 +1,325 @@
+---
+// Base layout: wraps every page with the <head>, ticker, nav and footer.
+// Props:
+//   title, description: for the browser tab and link previews
+//   root:   relative path back to the site root ('' for top-level pages, '../' one folder down).
+//           Relative links keep the site working on Vercel and in previews.
+//   active: which nav item to highlight ('exp', 'comp', 'club', 'deck', 'proj', 'note')
+import { profile, ticker } from '../data/profile.js';
+
+const { title, description, root = '', active = '' } = Astro.props;
+const arrow = { up: '▲', down: '▼', flat: '■' };
+const nav = [
+  ['exp', 'EXP', 'Experience', 'experience.html'],
+  ['comp', 'COMP', 'Competitions', 'competitions.html'],
+  ['club', 'CLUB', 'Clubs', 'clubs.html'],
+  ['deck', 'DECK', 'Slides', 'decks.html'],
+  ['proj', 'PROJ', 'Projects', 'projects.html'],
+  ['note', 'NOTE', 'Notes', 'notes.html'],
+];
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta name="theme-color" content="#0b0e13" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+  />
+</head>
+<body>
+  <!-- Ticker: a news crawl of your results. Duplicated so the loop is seamless; the copy is hidden from screen readers. -->
+  <div class="ticker" aria-label="Highlights">
+    <div class="ticker-track">
+      {[0, 1].map((copy) => (
+        <ul aria-hidden={copy === 1 ? 'true' : undefined}>
+          {ticker.map((t) => (
+            <li>
+              <a href={`${root}${t.href}`} tabindex={copy === 1 ? '-1' : undefined}>
+                <span class="t-code">{t.code}</span>
+                <span class="t-text">{t.text}</span>
+                <span class={`t-val ${t.dir}`}>{arrow[t.dir]} {t.value}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ))}
+    </div>
+  </div>
+
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="mark" href={`${root}index.html`} aria-label="Home">Zaahid Tinwala</a>
+      <nav aria-label="Sections">
+        {nav.map(([key, code, label, href]) => (
+          <a href={`${root}${href}`} class={active === key ? 'on' : undefined} aria-current={active === key ? 'page' : undefined}>
+            <b>{code}</b><span>{label}</span>
+          </a>
+        ))}
+      </nav>
+      <div class="clock">
+        <span id="sgt">--:--</span> SGT
+        <span id="sgx" class="session">SGX</span>
+      </div>
+      <a class="btn-resume" href={`${root}resume.pdf`} target="_blank" rel="noopener">Resume ↗</a>
+    </div>
+    <div class="progress" aria-hidden="true"></div>
+  </header>
+
+  <main id="main">
+    <slot />
+  </main>
+
+  <footer class="foot" id="contact">
+    <div class="wrap">
+      <div class="foot-contact">
+        <p class="foot-kicker mono">CONT &lt;GO&gt;</p>
+        <div class="email-row">
+          <span class="email mono" id="email">{profile.email}</span>
+          <button type="button" class="btn" id="copy">Copy</button>
+        </div>
+        <p class="foot-links">
+          <a href={profile.linkedin} target="_blank" rel="noopener">LinkedIn ↗</a>
+          <a href={profile.github} target="_blank" rel="noopener">GitHub ↗</a>
+          <a href={`${root}resume.pdf`} target="_blank" rel="noopener">Resume ↗</a>
+        </p>
+      </div>
+      <div class="foot-base">
+        <span>© 2026 {profile.name}</span>
+        <span class="mono">1.3483° N, 103.6831° E · NTU</span>
+        <span>Built with Astro</span>
+      </div>
+    </div>
+  </footer>
+
+  <script is:inline>
+    // Live Singapore clock plus SGX securities session status.
+    // SGX trades 09:00–12:00 and 13:00–17:00 SGT on weekdays (public holidays not handled).
+    (function () {
+      const t = document.getElementById('sgt');
+      const s = document.getElementById('sgx');
+      if (!t || !s) return;
+      function tick() {
+        const parts = new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Asia/Singapore', hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false,
+        }).formatToParts(new Date());
+        const get = (k) => parts.find((p) => p.type === k)?.value;
+        const m = +get('hour') * 60 + +get('minute');
+        const wd = get('weekday');
+        t.textContent = `${get('hour')}:${get('minute')}`;
+        let label = 'SGX CLOSED', cls = 'closed';
+        if (wd !== 'Sat' && wd !== 'Sun') {
+          if ((m >= 540 && m < 720) || (m >= 780 && m < 1020)) { label = 'SGX OPEN'; cls = 'open'; }
+          else if (m >= 720 && m < 780) { label = 'SGX LUNCH'; cls = 'lunch'; }
+        }
+        s.textContent = label;
+        s.className = 'session ' + cls;
+      }
+      tick();
+      setInterval(tick, 15000);
+    })();
+
+    // Site-wide scroll effects:
+    //  1. Reveal: cards, rows and headings fade up as they come into view, one after another.
+    //  2. Progress: a thin amber bar under the nav shows how far down the page you are.
+    // Skipped entirely for visitors who ask their device for reduced motion.
+    (function () {
+      const bar = document.querySelector('.progress');
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function progress() {
+        if (!bar) return;
+        const h = document.documentElement.scrollHeight - window.innerHeight;
+        bar.style.transform = `scaleX(${h > 0 ? Math.min(1, window.scrollY / h) : 0})`;
+      }
+      window.addEventListener('scroll', progress, { passive: true });
+      progress();
+
+      if (reduce || !('IntersectionObserver' in window)) return;
+      const selectors = [
+        '.sec', '.comp-list > li', '.club', '.proj', '.slide-rows > li', '.notes > li', '.now > li',
+        '.index .tile', '.tiles > .tile', '.rows > .row', '.chips', '.vol > li', '.facts', '.body', '.latest',
+        '.des', '.pager a',
+      ];
+      const els = [...document.querySelectorAll(selectors.join(','))].filter((el) => !el.closest('.timeline'));
+      if (!els.length) return;
+      document.documentElement.classList.add('reveal-on');
+      els.forEach((el) => {
+        // Stagger siblings so a list cascades in rather than appearing all at once.
+        const sibs = [...el.parentElement.children].filter((c) => els.includes(c));
+        el.style.setProperty('--i', Math.min(sibs.indexOf(el), 8));
+        el.classList.add('rv');
+      });
+      const done = (el) => {
+        el.classList.add('in');
+        // After the animation, drop the helper classes so hover effects behave normally.
+        setTimeout(() => { el.classList.remove('rv', 'in'); el.style.removeProperty('--i'); }, 1300);
+      };
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) { done(e.target); io.unobserve(e.target); } });
+      }, { threshold: 0 });
+      els.forEach((el) => io.observe(el));
+      // Anything already scrolled past (fast scroll, jump links) is revealed straight away.
+      window.addEventListener('scroll', () => {
+        els.forEach((el) => {
+          if (el.classList.contains('rv') && !el.classList.contains('in') && el.getBoundingClientRect().top < window.innerHeight) { done(el); io.unobserve(el); }
+        });
+      }, { passive: true });
+    })();
+
+    // Copy-email button. Falls back to selecting the text if the clipboard is blocked.
+    (function () {
+      const btn = document.getElementById('copy');
+      const el = document.getElementById('email');
+      if (!btn || !el) return;
+      btn.addEventListener('click', function () {
+        const done = () => { btn.textContent = 'Copied'; setTimeout(() => (btn.textContent = 'Copy'), 1600); };
+        const select = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+        try { navigator.clipboard.writeText(el.textContent.trim()).then(done, select); } catch (e) { select(); }
+      });
+    })();
+  </script>
+</body>
+</html>
+
+<style is:global>
+  /* Layout concept: a trading-desk screen. Dark slate ground, amber for anything you'd act on,
+     green/red only for up/down, monospace for every number, a condensed grotesk for headlines. */
+  :root {
+    --bg: #0b0e13;          /* screen background, blue-biased black */
+    --panel: #11161e;       /* raised panels */
+    --line: #212a37;        /* hairlines and borders */
+    --fg: #e7eaf0;          /* main text */
+    --muted: #8c96a8;       /* secondary text */
+    --amber: #ffb547;       /* accent: links, function codes, highlights */
+    --up: #3fcf8e;          /* semantic: up */
+    --down: #ff6b6b;        /* semantic: down */
+    --font-display: 'Bricolage Grotesque', 'Arial Narrow', Arial, sans-serif;
+    --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 6rem; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--font-body); font-size: 1rem; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--amber); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 2px; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  .amber { color: var(--amber); }
+  .wrap { max-width: 72rem; margin: 0 auto; padding-inline: clamp(1rem, 4vw, 2.5rem); }
+  .display { font-family: var(--font-display); font-variation-settings: 'wdth' 75, 'opsz' 96; letter-spacing: -0.02em; }
+
+  /* Ticker */
+  .ticker {
+    overflow: hidden; border-bottom: 1px solid var(--line); background: var(--panel);
+    font-family: var(--font-mono); font-size: 0.75rem; padding-top: env(safe-area-inset-top, 0px);
+  }
+  .ticker-track { display: flex; width: max-content; animation: scroll 80s linear infinite; }
+  .ticker:hover .ticker-track, .ticker:focus-within .ticker-track { animation-play-state: paused; }
+  .ticker ul { display: flex; list-style: none; margin: 0; padding: 0; }
+  .ticker li { border-right: 1px solid var(--line); white-space: nowrap; }
+  .ticker a { display: flex; gap: 0.6rem; padding: 0.5rem 1.4rem; color: inherit; }
+  .ticker a:hover { text-decoration: none; background: var(--bg); }
+  .t-code { color: var(--bg); background: var(--amber); padding: 0 0.35rem; border-radius: 2px; font-weight: 500; }
+  .t-text { color: var(--muted); }
+  .t-val.up { color: var(--up); }
+  .t-val.down { color: var(--down); }
+  .t-val.flat { color: var(--fg); }
+  @keyframes scroll { to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .ticker { overflow-x: auto; }
+    .ticker-track { animation: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* Nav */
+  .nav {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+    background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner { display: flex; align-items: center; gap: 1.5rem; padding-block: 0.75rem; }
+  .mark {
+    font-family: var(--font-display); font-variation-settings: 'wdth' 75, 'opsz' 48; font-weight: 700;
+    color: var(--fg); font-size: 1.25rem; letter-spacing: -0.01em; white-space: nowrap;
+  }
+  .mark:hover { text-decoration: none; color: var(--amber); }
+  .nav nav { display: flex; gap: 1.1rem; font-size: 0.85rem; }
+  .nav nav a { color: var(--muted); display: flex; align-items: baseline; gap: 0.35rem; white-space: nowrap; }
+  .nav nav a b { font-family: var(--font-mono); font-weight: 500; color: var(--amber); font-size: 0.7rem; }
+  .nav nav a:hover, .nav nav a.on { color: var(--fg); text-decoration: none; }
+  .nav nav a.on b { color: var(--bg); background: var(--amber); padding: 0 0.3rem; border-radius: 2px; }
+  .clock { margin-left: auto; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); display: flex; gap: 0.5rem; align-items: center; white-space: nowrap; }
+  #sgt { color: var(--fg); }
+  .session { padding: 0.1rem 0.45rem; border: 1px solid var(--line); border-radius: 2px; }
+  .session.open { color: var(--up); }
+  .session.lunch { color: var(--amber); }
+  .btn-resume { font-family: var(--font-mono); font-size: 0.78rem; color: var(--bg); background: var(--amber); padding: 0.4rem 0.75rem; border-radius: 2px; white-space: nowrap; }
+  .btn-resume:hover { text-decoration: none; filter: brightness(1.1); }
+  @media (max-width: 1020px) {
+    .nav-inner { flex-wrap: wrap; row-gap: 0.4rem; }
+    .nav nav { order: 5; width: 100%; overflow-x: auto; gap: 1.25rem; padding-bottom: 0.15rem; }
+  }
+  @media (max-width: 560px) {
+    .nav nav a span { display: none; }
+    .nav nav a b { font-size: 0.78rem; }
+    .clock .session { display: none; }
+  }
+
+  /* Scroll reveal (turned on by the script; elements are visible without it) */
+  html.reveal-on .rv { opacity: 0; transform: translateY(1.4rem); transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: calc(var(--i, 0) * 70ms); }
+  html.reveal-on .rv.in { opacity: 1; transform: none; }
+  .progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--amber); transform: scaleX(0); transform-origin: left; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .progress { display: none; } }
+
+  /* Shared building blocks used on every page */
+  .btn {
+    display: inline-block; font: 500 0.85rem var(--font-body); color: var(--fg); background: transparent;
+    border: 1px solid var(--line); padding: 0.55rem 1rem; border-radius: 2px; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--amber); text-decoration: none; }
+  .btn.primary { background: var(--amber); color: var(--bg); border-color: var(--amber); }
+
+  .page-head { padding-block: clamp(2.5rem, 6vw, 4.5rem) 1.5rem; }
+  .page-head .kicker { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em; color: var(--amber); margin: 0 0 0.75rem; }
+  .page-head h1 {
+    font-family: var(--font-display); font-variation-settings: 'wdth' 75, 'opsz' 96; font-weight: 700;
+    font-size: clamp(2.4rem, 7vw, 4.5rem); line-height: 0.95; letter-spacing: -0.02em; margin: 0 0 1rem; text-wrap: balance;
+  }
+  .page-head .intro { max-width: 40rem; color: var(--muted); font-size: 1.05rem; margin: 0; }
+
+  .sec {
+    display: flex; align-items: baseline; gap: 0.9rem; flex-wrap: wrap;
+    font-family: var(--font-display); font-variation-settings: 'wdth' 85, 'opsz' 48; font-weight: 700;
+    font-size: clamp(1.4rem, 3vw, 1.9rem); margin: 0 0 1.5rem; padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--line); text-wrap: balance;
+  }
+  .code { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500; color: var(--bg); background: var(--amber); padding: 0.15rem 0.45rem; letter-spacing: 0.04em; border-radius: 2px; }
+  .block { padding-block: 3rem 0; }
+  .tags { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); letter-spacing: 0.03em; margin: 0; }
+  .points { margin: 0; padding-left: 1.1rem; display: grid; gap: 0.45rem; max-width: 44rem; }
+  .points li::marker { color: var(--amber); }
+  .result { font-family: var(--font-mono); color: var(--up); font-size: 0.85rem; }
+  .pill { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); padding: 0.05rem 0.4rem; border-radius: 2px; }
+
+  /* Footer / contact */
+  .foot { border-top: 1px solid var(--line); margin-top: 5rem; background: var(--panel); }
+  .foot-contact { padding-block: 3rem 2rem; display: grid; gap: 1rem; }
+  .foot-kicker { color: var(--amber); font-size: 0.78rem; margin: 0; }
+  .email-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+  .email { font-size: clamp(1rem, 3vw, 1.35rem); color: var(--amber); overflow-wrap: anywhere; }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 1.5rem; margin: 0; }
+  .foot-base { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; padding-block: 1.25rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; }
+</style>

@@ -1,0 +1,174 @@
+---
+// Full experience: an animated timeline of every role, then education, coursework and skills.
+import Base from '../layouts/Base.astro';
+import { experience, education, courses } from '../data/experience.js';
+import Skills from '../components/Skills.astro';
+---
+<Base title="Experience · Zaahid Tinwala" description="Every role Zaahid Tinwala has held: Endowus, FinMechanics, NTU research, Singapore Police Force, Luxoft and Whizpace, plus education and skills." active="exp">
+  <header class="page-head wrap">
+    <p class="kicker">EXP &lt;GO&gt;</p>
+    <h1>Experience</h1>
+  </header>
+
+  <section class="wrap">
+    <ol class="timeline">
+      {experience.map((job) => (
+        <li class="job">
+          <div class="job-head">
+            <h2 class="display">{job.role}</h2>
+            <p class="org">{job.org}</p>
+            <p class="mono muted meta">{job.dates} · {job.place}</p>
+          </div>
+          <div class="job-year" aria-hidden="true">
+            <span class="year display">{job.dates.match(/\d{4}/)[0]}</span>
+            <span class="dot"></span>
+          </div>
+          <div class="job-body">
+            <span class="pill">{job.kind}</span>
+            <p class="summary">{job.summary}</p>
+            {job.points.length > 0 && (
+              <details class="more">
+                <summary class="mono">What I did ({job.points.length})</summary>
+                <ul class="points muted">{job.points.map((p) => <li>{p}</li>)}</ul>
+              </details>
+            )}
+            <p class="tags">{job.tags.join(' · ')}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <script is:inline>
+    // Scroll animation for the timeline:
+    //  - each role slides in from both sides as it enters the screen
+    //  - the amber line fills down the page as you scroll
+    //  - the role nearest the middle of the screen is highlighted
+    // Only runs when the browser supports it and the visitor hasn't asked for reduced motion,
+    // so without it the page simply shows everything.
+    (function () {
+      const tl = document.querySelector('.timeline');
+      if (!tl || !('IntersectionObserver' in window)) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const jobs = [...tl.querySelectorAll('.job')];
+      tl.classList.add('animate');
+
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+        });
+      }, { rootMargin: '0px 0px -12% 0px', threshold: 0.15 });
+      jobs.forEach((j) => io.observe(j));
+
+      let ticking = false;
+      function update() {
+        ticking = false;
+        const r = tl.getBoundingClientRect();
+        const mid = window.innerHeight * 0.55;
+        const p = Math.min(1, Math.max(0, (mid - r.top) / r.height));
+        tl.style.setProperty('--fill', p.toFixed(4));
+        let best = null, bestD = Infinity;
+        jobs.forEach((j) => {
+          // Reveal anything already scrolled past, so fast scrolling never leaves gaps.
+          if (j.getBoundingClientRect().top < window.innerHeight * 0.88) j.classList.add('in');
+          const y = j.querySelector('.dot').getBoundingClientRect().top;
+          const d = Math.abs(y - mid);
+          if (d < bestD) { bestD = d; best = j; }
+        });
+        jobs.forEach((j) => j.classList.toggle('active', j === best));
+      }
+      function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+      update();
+    })();
+  </script>
+
+  <section class="block wrap" id="education">
+    <h2 class="sec"><span class="code">EDU &lt;GO&gt;</span>Education</h2>
+    <div class="rows">
+      {education.map((e) => (
+        <div class="row">
+          <p class="mono muted">{e.dates}</p>
+          <div>
+            <p class="row-title">{e.school}</p>
+            <p>{e.award}</p>
+            <p class="muted small">{e.detail}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+    <p class="courses-label mono muted">Relevant NTU courses</p>
+    <ul class="chips">{courses.map((c) => <li>{c}</li>)}</ul>
+  </section>
+
+  <section class="block wrap" id="skills">
+    <h2 class="sec"><span class="code">SKILL &lt;GO&gt;</span>Toolkit</h2>
+    <Skills showLanguages />
+  </section>
+
+</Base>
+
+<style>
+  /* Timeline: role on the left, year on a central line, summary on the right */
+  .timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+  .timeline::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: color-mix(in srgb, var(--amber) 55%, var(--line)); }
+  .job { display: grid; grid-template-columns: minmax(0, 1fr) 11rem minmax(0, 1fr); gap: 2rem; padding-block: 2.5rem; align-items: start; }
+  .job-head { text-align: right; }
+  .job-head h2 { font-weight: 700; font-size: clamp(1.5rem, 2.6vw, 2.1rem); line-height: 1; margin: 0 0 0.5rem; text-wrap: balance; }
+  .org { color: var(--amber); font-weight: 600; margin: 0 0 0.3rem; }
+  .meta { font-size: 0.78rem; margin: 0; }
+  .job-year { display: grid; justify-items: center; gap: 0.6rem; position: relative; z-index: 1; }
+  .year { font-weight: 700; font-size: clamp(2.6rem, 5vw, 4rem); line-height: 0.9; color: var(--muted); background: var(--bg); padding-block: 0.25rem; }
+  .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 5px color-mix(in srgb, var(--amber) 22%, transparent); }
+  .job-body { display: grid; gap: 0.8rem; justify-items: start; }
+  .summary { margin: 0; max-width: 34rem; }
+  .more summary { cursor: pointer; font-size: 0.8rem; color: var(--amber); list-style: none; }
+  .more summary::-webkit-details-marker { display: none; }
+  .more summary::before { content: '+ '; }
+  .more[open] summary::before { content: '– '; }
+  .more .points { margin-top: 0.75rem; font-size: 0.93rem; }
+
+  /* Scroll animation (only applies once the script adds .animate) */
+  .timeline::after {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -0.5px;
+    background: var(--amber); transform-origin: top; transform: scaleY(var(--fill, 0));
+  }
+  .timeline:not(.animate)::after { display: none; }
+  .animate .job-head, .animate .job-body, .animate .job-year {
+    transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .animate .job:not(.in) .job-head { opacity: 0; transform: translateX(-2.5rem); }
+  .animate .job:not(.in) .job-body { opacity: 0; transform: translateX(2.5rem); }
+  .animate .job:not(.in) .job-year { opacity: 0; transform: scale(0.8); }
+  .animate .job.in .job-body { transition-delay: 0.12s; }
+  .animate .year { transition: color 0.35s ease; }
+  .animate .dot { transition: transform 0.35s ease, box-shadow 0.35s ease; }
+  .animate .job.active .year { color: var(--fg); }
+  .animate .job.active .dot { transform: scale(1.35); box-shadow: 0 0 0 7px color-mix(in srgb, var(--amber) 28%, transparent); }
+  .animate .job.active .org { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--amber) 45%, transparent); text-underline-offset: 4px; }
+
+  .rows { display: grid; }
+  .row { display: grid; grid-template-columns: 14rem minmax(0, 1fr); gap: 2rem; padding-block: 1rem; border-bottom: 1px solid var(--line); }
+  .row p { margin: 0; }
+  .row-title { font-weight: 600; }
+  .small { font-size: 0.88rem; }
+  .courses-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; margin: 1.5rem 0 0.6rem; }
+  .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chips li { border: 1px solid var(--line); padding: 0.3rem 0.65rem; font-size: 0.85rem; }
+
+
+
+  @media (max-width: 760px) {
+    .row { grid-template-columns: minmax(0, 1fr); gap: 0.4rem; }
+    .timeline::before, .timeline::after { left: 0.35rem; }
+    .animate .job:not(.in) .job-head, .animate .job:not(.in) .job-body { transform: translateY(1.25rem); }
+    .animate .job:not(.in) .job-year { transform: translateY(1.25rem); }
+    .job { grid-template-columns: minmax(0, 1fr); gap: 0.6rem; padding-left: 1.75rem; padding-block: 1.75rem; position: relative; }
+    .job-head { text-align: left; order: 2; }
+    .job-year { order: 1; justify-items: start; }
+    .job-body { order: 3; }
+    .year { font-size: 2rem; background: none; padding: 0; }
+    .dot { position: absolute; left: -1.75rem; top: 0.7rem; transform: translateX(0.05rem); }
+  }
+</style>

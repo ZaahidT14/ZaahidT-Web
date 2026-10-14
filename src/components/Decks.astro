@@ -1,0 +1,45 @@
+---
+// "View slides" rows. Each deck is one clickable row that opens the deck's link in a new tab
+// (a public Google Drive link, or a PDF in public/decks/).
+// Props:
+//   decks: list from the data file: { title, link }
+//   root:  relative path to the site root (only used for local PDFs)
+//   showSource: also show which competition or club the deck is from
+//   action: the label on the right (default 'View slides ↗')
+//   download: true for files people should save (e.g. a spreadsheet) instead of open
+const { decks = [], root = '', showSource = false, action = 'View slides ↗', download = false, id = 'slides' } = Astro.props;
+const href = (link) => (/^https?:\/\//.test(link) ? link : `${root}${link}`);
+---
+{decks.length > 0 && (
+  <ul class="slide-rows" id={id}>
+    {decks.map((d) => (
+      <li>
+        <a href={href(d.link)} target={download ? undefined : '_blank'} rel="noopener" download={download ? '' : undefined}>
+          <span class="sr-text">
+            <span class="sr-title">{d.title}</span>
+            {showSource && d.source && <span class="sr-source">{d.source}</span>}
+          </span>
+          <span class="sr-go mono">{action}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+)}
+
+<style>
+  .slide-rows { list-style: none; margin: 0 0 2rem; padding: 0; display: grid; gap: 0.5rem; }
+  .slide-rows a {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: 0.9rem 1.1rem; border: 1px solid var(--line); border-left: 2px solid var(--amber);
+    background: var(--panel); color: var(--fg);
+  }
+  .slide-rows a { transition: background 0.25s ease, padding 0.25s ease; }
+  .slide-rows a:hover { background: var(--bg); text-decoration: none; padding-left: 1.4rem; }
+  .sr-go { transition: transform 0.25s ease; }
+  .slide-rows a:hover .sr-go { transform: translateX(4px); }
+  .slide-rows a:hover .sr-go { text-decoration: underline; text-underline-offset: 3px; }
+  .sr-text { display: grid; gap: 0.1rem; min-width: 0; }
+  .sr-title { font-weight: 600; }
+  .sr-source { font-size: 0.85rem; color: var(--muted); }
+  .sr-go { font-size: 0.82rem; color: var(--amber); white-space: nowrap; }
+</style>

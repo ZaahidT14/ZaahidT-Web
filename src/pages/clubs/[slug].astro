@@ -1,0 +1,40 @@
+---
+// One page per club, built from src/data/clubs.js.
+import Base from '../../layouts/Base.astro';
+import Decks from '../../components/Decks.astro';
+import { clubs } from '../../data/clubs.js';
+
+export function getStaticPaths() {
+  return clubs.map((c) => ({ params: { slug: c.slug }, props: { c } }));
+}
+const { c } = Astro.props;
+---
+<Base title={`${c.name} · Zaahid Tinwala`} description={`${c.role}, ${c.name}. ${c.summary}`} root="../" active="club">
+  <header class="page-head wrap">
+    <a class="back mono" href="../clubs.html">← CLUB &lt;GO&gt; All clubs</a>
+    <h1>{c.name}</h1>
+    <p class="intro"><span class="result">{c.role}</span> · <span class="mono">{c.dates}</span></p>
+  </header>
+
+  <section class="wrap">
+    <Decks decks={c.decks} root="../" />
+    <div class="body">
+      <p class="summary">{c.summary}</p>
+      {c.sections.map((s) => (
+        <div class="part">
+          <h2 class="sub display">{s.title}</h2>
+          <ul class="points">{s.points.map((p) => <li>{p}</li>)}</ul>
+        </div>
+      ))}
+    </div>
+  </section>
+
+</Base>
+
+<style>
+  .back { font-size: 0.78rem; display: inline-block; margin-bottom: 1.5rem; }
+  .body { max-width: 50rem; }
+  .summary { font-size: 1.1rem; margin: 0 0 2rem; }
+  .part { margin-bottom: 2rem; }
+  .sub { font-weight: 700; font-size: 1.4rem; margin: 0 0 0.75rem; }
+</style>

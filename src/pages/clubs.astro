@@ -1,0 +1,59 @@
+---
+import Base from '../layouts/Base.astro';
+import { clubs, volunteering } from '../data/clubs.js';
+---
+<Base title="Clubs · Zaahid Tinwala" description="Clubs and leadership: NTU Business Solutions Case Club and ABCC 2027 Co-Chair, NTU Blockchain Club, Tamarind Hall Bizmag, VJC Economics & Business Club President." active="club">
+  <header class="page-head wrap">
+    <p class="kicker">CLUB &lt;GO&gt;</p>
+    <h1>Clubs and leadership</h1>
+  </header>
+
+  <section class="wrap">
+    <div class="clubs">
+      {clubs.map((c, i) => (
+        <a class={`club ${i === 0 ? 'lead' : ''}`} href={`clubs/${c.slug}.html`}>
+          <div class="club-top mono"><span class="muted">{c.dates}</span>{c.decks.length > 0 && <span class="amber">Slides available</span>}</div>
+          <h2 class="display">{c.name}</h2>
+          <p class="role">{c.role}</p>
+          <p class="muted">{c.summary}</p>
+          <span class="go mono">Open →</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="block wrap">
+    <h2 class="sec"><span class="code">VOL &lt;GO&gt;</span>Volunteering</h2>
+    <ul class="vol">
+      {volunteering.map((v) => (
+        <li>
+          <span class="mono muted">{v.dates}</span>
+          <span><strong>{v.org}</strong> · {v.role}</span>
+          <span class="pill">{v.cause}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .clubs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .club { display: flex; flex-direction: column; gap: 0.5rem; padding: 1.25rem; border: 1px solid var(--line); background: var(--panel); color: var(--fg); }
+  .club.lead { grid-column: 1 / -1; }
+  .club { transition: border-color 0.25s ease, transform 0.25s ease, background 0.25s ease; }
+  .club:hover { border-color: var(--amber); text-decoration: none; transform: translateY(-4px); background: color-mix(in srgb, var(--amber) 5%, var(--panel)); }
+  .go { transition: transform 0.25s ease; }
+  .club:hover .go { transform: translateX(5px); }
+  .club-top { display: flex; justify-content: space-between; font-size: 0.75rem; }
+  .club h2 { font-weight: 700; font-size: 1.6rem; line-height: 1.05; margin: 0; }
+  .club.lead h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); }
+  .club p { margin: 0; }
+  .role { color: var(--up); font-family: var(--font-mono); font-size: 0.85rem; }
+  .go { margin-top: auto; padding-top: 0.5rem; color: var(--amber); font-size: 0.78rem; }
+  .vol { list-style: none; margin: 0; padding: 0; }
+  .vol li { display: grid; grid-template-columns: 10rem minmax(0, 1fr) auto; gap: 1.5rem; align-items: baseline; padding-block: 0.9rem; border-bottom: 1px solid var(--line); }
+  @media (max-width: 700px) {
+    .clubs { grid-template-columns: minmax(0, 1fr); }
+    .vol li { grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
+  }
+</style>

@@ -1,0 +1,79 @@
+---
+// Competitions, split into the ones with an award and the ones I took part in.
+// Which list an entry lands in is set by `award: true/false` in src/data/competitions.js.
+import Base from '../layouts/Base.astro';
+import { competitions } from '../data/competitions.js';
+
+// Newest first, by when each one ended (the last month/year in its date); entries with no date go last.
+const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+const ended = (c) => {
+  const d = (c.date || '').toLowerCase();
+  const years = d.match(/\d{4}/g);
+  if (!years) return 0;
+  const months = d.match(/jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/g);
+  const m = months ? MONTHS.indexOf(months[months.length - 1]) : 11;
+  return +years[years.length - 1] * 12 + m;
+};
+const sorted = [...competitions].sort((a, b) => ended(b) - ended(a));
+const groups = [
+  { code: 'AWRD', title: 'Awards', items: sorted.filter((c) => c.award) },
+  { code: 'PART', title: 'Also competed in', items: sorted.filter((c) => !c.award) },
+].filter((g) => g.items.length > 0);
+---
+<Base title="Competitions · Zaahid Tinwala" description="Case competitions and challenges: ITCC 2026 (Top 16, Merit Award), Susquehanna Brainteaser Battle (3rd), Youth Action Challenge and more." active="comp">
+  <header class="page-head wrap">
+    <p class="kicker">COMP &lt;GO&gt;</p>
+    <h1>Competitions</h1>
+  </header>
+
+  {groups.map((g) => (
+    <section class="wrap group">
+      <h2 class="sec"><span class="code">{g.code} &lt;GO&gt;</span>{g.title}<span class="count mono muted">{g.items.length}</span></h2>
+      <ul class="comp-list">
+        {g.items.map((c) => (
+          <li>
+            <a href={`competitions/${c.slug}.html`}>
+              <span class="mono muted c-date">{c.date}</span>
+              <span class="c-main">
+                <span class="c-name display">{c.name}</span>
+                <span class="muted c-host">{c.host}</span>
+              </span>
+              <span class={c.award ? 'result c-res' : 'c-res mono muted'}>{c.result}</span>
+              <span class="c-extras mono">
+                {c.decks.length > 0 && <span class="amber">Slides</span>}{(c.files ?? []).length > 0 && <span class="amber">Model</span>}
+                <span class="amber">→</span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</Base>
+
+<style>
+  .group + .group { margin-top: 3rem; }
+  .sec .count { margin-left: auto; font-size: 0.8rem; font-weight: 400; }
+  .comp-list { list-style: none; margin: 0; padding: 0; }
+  .comp-list a {
+    display: grid; grid-template-columns: 9rem minmax(0, 1fr) 14rem 5rem; gap: 1.5rem; align-items: baseline;
+    padding: 1.4rem 0.5rem; border-bottom: 1px solid var(--line); color: var(--fg);
+  }
+  .comp-list a { position: relative; transition: background 0.25s ease, padding 0.25s ease; }
+  .comp-list a::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--amber); transform: scaleY(0); transform-origin: top; transition: transform 0.3s ease; }
+  .comp-list a:hover { text-decoration: none; background: var(--panel); padding-left: 1.1rem; }
+  .comp-list a:hover::before { transform: scaleY(1); }
+  .c-extras .amber:last-child { transition: transform 0.25s ease; }
+  .comp-list a:hover .c-extras .amber:last-child { transform: translateX(5px); }
+  .comp-list a:hover .c-name { color: var(--amber); }
+  .c-date { font-size: 0.8rem; }
+  .c-main { display: grid; gap: 0.2rem; }
+  .c-name { font-weight: 700; font-size: 1.45rem; line-height: 1.05; }
+  .c-host { font-size: 0.88rem; }
+  .c-res { font-size: 0.85rem; }
+  .c-extras { display: flex; gap: 0.75rem; justify-content: flex-end; font-size: 0.75rem; }
+  @media (max-width: 860px) {
+    .comp-list a { grid-template-columns: minmax(0, 1fr); gap: 0.4rem; }
+    .c-extras { justify-content: flex-start; }
+  }
+</style>

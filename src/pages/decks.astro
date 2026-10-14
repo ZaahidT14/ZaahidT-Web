@@ -1,0 +1,16 @@
+---
+// Every slide deck on the site in one place.
+import Base from '../layouts/Base.astro';
+import Decks from '../components/Decks.astro';
+import { allDecks } from '../data/decks.js';
+---
+<Base title="Slides · Zaahid Tinwala" description="Slide decks from Zaahid Tinwala's case competitions and club cases." active="deck">
+  <header class="page-head wrap">
+    <p class="kicker">DECK &lt;GO&gt;</p>
+    <h1>Slides</h1>
+  </header>
+
+  <section class="wrap">
+    <Decks decks={allDecks} showSource />
+  </section>
+</Base>
